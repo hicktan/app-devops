@@ -8,13 +8,13 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY website/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY config/nginx.conf /etc/nginx/sites-available/default
-COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY website/config/nginx.conf /etc/nginx/sites-available/default
+COPY website/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-COPY . .
+COPY website/ .
 
 EXPOSE 80
 
