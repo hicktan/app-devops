@@ -11,10 +11,10 @@ WORKDIR /app
 COPY website/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY website/config/nginx.conf /etc/nginx/sites-available/default
-COPY website/config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY config/nginx.conf /etc/nginx/sites-available/default
+COPY config/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-COPY website/ .
+COPY . .
 
 EXPOSE 80
 
