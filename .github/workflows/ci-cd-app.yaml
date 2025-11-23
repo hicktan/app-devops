@@ -51,6 +51,7 @@ jobs:
             ECR_REPOSITORY: app-devops
             ECR_URI: ${{needs.job1.outputs.ECR_REGISTRY}}
             IMAGE_TAG: ${{needs.job1.outputs.image_tag}}
+            EC2_Tag_Name: app-devops-server
         steps:
             - name: "Configure AWS Credentials"
               uses: aws-actions/configure-aws-credentials@v5.1.0
@@ -66,7 +67,7 @@ jobs:
                   --query "Reservations[].Instances[].InstanceId[]" \
                   --output text)
 
-                  if [-z "$INSTANCE_ID"]; then
+                  if [ -z "$INSTANCE_ID" ]; then
                     echo "::error::Nenhuma instância EC2 rodando com o Tag:Name = $EC2_TAG_NAME encontrada."
                     exit 1
                   fi
