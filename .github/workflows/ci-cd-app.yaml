@@ -49,7 +49,7 @@ jobs:
         needs: job1
         env:
             ECR_REPOSITORY: app-devops
-            ECR_URI: ${{needs.job1.outputs.ECR_REGISTRY}}
+            ECR_URI: ${{secrets.ECR_REGISTRY}}
             IMAGE_TAG: ${{needs.job1.outputs.image_tag}}
             EC2_Tag_Name: app-devops-server
         steps:
@@ -75,7 +75,7 @@ jobs:
               
             - name: Deploy via SSM
               run: |
-                INSTANCE_ID= "${{steps.find_ec2.outputs.instance_id}}"
+                INSTANCE_ID= "${{ steps.find_ec2.outputs.instance_id }}"
                 DEPLOY_SCRIPT="
                   echo 'Iniciando deploy da imagem $IMAGE_TAG...';
                   
@@ -88,8 +88,8 @@ jobs:
                   docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI/$ECR_REPOSITRY:$IMAGE_TAG;
 
                   aws ssm send-command \
-                    --instance-ids $INSTANCE_ID \
+                    --instance-ids "$INSTANCE_ID" \
                     --document-name "AWS-RunShellScript" \
-                    --parameters commands= $DEPLOY_SCRIPT"
+                    --parameters commands="$DEPLOY_SCRIPT" "
 
                   
