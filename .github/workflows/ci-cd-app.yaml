@@ -77,19 +77,19 @@ jobs:
                 DEPLOY_SCRIPT="
                   echo 'Iniciando deploy da imagem $IMAGE_TAG...';
                   
-                  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 023085635104.dkr.ecr.us-east-1.amazonaws.com;
+                  sudo aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 023085635104.dkr.ecr.us-east-1.amazonaws.com;
 
-                  docker stop $ECR_REPOSITRY || true;
-                  docker rm $ECR_REPOSITRY || true;
-                  docker pull $ECR_URI:$IMAGE_TAG;
+                  sudo docker stop $ECR_REPOSITRY || true;
+                  sudo docker rm $ECR_REPOSITRY || true;
+                  sudo docker pull $ECR_URI:$IMAGE_TAG;
 
-                  docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI/$ECR_REPOSITRY:$IMAGE_TAG;
+                  sudo docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI/$ECR_REPOSITRY:$IMAGE_TAG;
 
-                  aws ssm send-command \
+                  sudo aws ssm send-command \
                     --instance-ids "$INSTANCE_ID" \
                     --document-name "AWS-RunShellScript" \
                     --parameters commands="$DEPLOY_SCRIPT" 
                     sleep 10
-                  aws ssm wait command-executed --command-id $(aws ssm list-commands --instance-id "$INSTANCE_ID" --query "Commands[0].CommandId" --output text) --instance-id "$INSTANCE_ID""
+                  sudo aws ssm wait command-executed --command-id $(aws ssm list-commands --instance-id "$INSTANCE_ID" --query "Commands[0].CommandId" --output text) --instance-id "$INSTANCE_ID""
 
                   
