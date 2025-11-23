@@ -32,7 +32,7 @@ jobs:
             - name: Build, Tag, and Push Docker image to Amazon ECR
               run: |
                 # Build a Docker image and tag it
-                docker build -t app-devops ./website
+                docker build -t app-devops .
 
                 # Tag the image with the ECR repository URI
                 docker tag app-devops:$IMAGE_TAG $ECR_REGISTRY:$IMAGE_TAG
