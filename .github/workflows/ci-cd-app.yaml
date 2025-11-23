@@ -38,7 +38,7 @@ jobs:
                 docker tag app-devops:latest $ECR_REGISTRY/$ECR_REPOSITRY:$IMAGE_TAG
 
                 # Push the Docker image to ECR
-                docker push $ECR_REGISTRY$ECR_REPOSITRY:$IMAGE_TAG
+                docker push $ECR_REGISTRY/$ECR_REPOSITRY:$IMAGE_TAG
         outputs:
             image_tag: ${{ env.IMAGE_TAG }}
             ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
