@@ -75,7 +75,7 @@ jobs:
               
             - name: Deploy via SSM
               run: |
-                INSTANCE_ID= "${{ steps.find_ec2.outputs.instance_id }}"
+                INSTANCE_ID="${{ steps.find_ec2.outputs.instance_id }}"
                 DEPLOY_SCRIPT="
                   echo 'Iniciando deploy da imagem $IMAGE_TAG...';
                   
