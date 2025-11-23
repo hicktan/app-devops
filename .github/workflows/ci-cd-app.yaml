@@ -35,7 +35,7 @@ jobs:
                 docker build -t app-devops .
 
                 # Tag the image with the ECR repository URI
-                docker tag app-devops:$IMAGE_TAG $ECR_REGISTRY:$IMAGE_TAG
+                docker tag app-devops:latest $ECR_REGISTRY:$IMAGE_TAG
 
                 # Push the Docker image to ECR
                 docker push $ECR_REGISTRY:$IMAGE_TAG
