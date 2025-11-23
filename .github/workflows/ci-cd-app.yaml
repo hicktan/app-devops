@@ -35,25 +35,60 @@ jobs:
                 docker build -t app-devops .
 
                 # Tag the image with the ECR repository URI
-                docker tag app-devops:latest $ECR_REGISTRY:$IMAGE_TAG
+                docker tag app-devops:latest $ECR_REGISTRY/$ECR_REPOSITRY:$IMAGE_TAG
 
                 # Push the Docker image to ECR
-                docker push $ECR_REGISTRY:$IMAGE_TAG
+                docker push $ECR_REGISTRY$ECR_REPOSITRY:$IMAGE_TAG
         outputs:
             image_tag: ${{ env.IMAGE_TAG }}
             ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
             
-    # job2:
-    #     name: Deploy to EC2
-    #     runs-on: ubuntu-latest
-    #     needs: job1
-    #     env:
-    #         INSTANCE_KEY: ${{secrets.INSTANCE_KEY}}
-    #         PUBLIC_IP: ${{secrets.PUBLIC_IP}}
-    #         ECR_REPOSITORY: app-devops
-    #         ECR_URI: ${{needs.job1.outputs.ECR_REGISTRY}}
-    #         IMAGE_TAG: ${{needs.job1.outputs.image_tag}}
-    #     steps:
-    #         - name: Deploy EC2 SSM
-    #           run: |
-               
+    job2:
+        name: Deploy to EC2 via SSM
+        runs-on: ubuntu-latest
+        needs: job1
+        env:
+            ECR_REPOSITORY: app-devops
+            ECR_URI: ${{needs.job1.outputs.ECR_REGISTRY}}
+            IMAGE_TAG: ${{needs.job1.outputs.image_tag}}
+        steps:
+            - name: "Configure AWS Credentials"
+              uses: aws-actions/configure-aws-credentials@v5.1.0
+              with:
+                role-to-assume: ${{secrets.GITHUBACTIONSAPPDEVOPS}}
+                aws-region: us-east-1
+
+            - name: Find EC2 ID by tag
+              id: find_ec2
+              run: |
+                INSTANCE_ID=$(aws ec2 describe-instances \
+                  --filters "Name=tag:Name,Values=$EC2_Tag_Name" "Name=instance-state-name,Values=running" \
+                  --query "Reservations[].Instances[].InstanceId[]" \
+                  --output text)
+
+                  if [-z "$INSTANCE_ID"]; then
+                    echo "::error::Nenhuma instância EC2 rodando com o Tag:Name = $EC2_TAG_NAME encontrada."
+                    exit 1
+                  fi
+                  echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+              
+            - name: Deploy via SSM
+              run: |
+                INSTANCE_ID= "${{steps.find_ec2.outputs.instance_id}}"
+                DEPLOY_SCRIPT="
+                  echo 'Iniciando deploy da imagem $IMAGE_TAG...';
+                  
+                  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_URI;
+
+                  docker stop $ECR_REPOSITRY || true;
+                  docker rm $ECR_REPOSITRY || true;
+                  docker pull $ECR_URI:$IMAGE_TAG;
+
+                  docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI/$ECR_REPOSITRY:$IMAGE_TAG;
+
+                  aws ssm send-command \
+                    --instance-ids $INSTANCE_ID \
+                    --document-name "AWS-RunShellScript" \
+                    --parameters commands=$DEPLOY_SCRIPT"
+
+                  
