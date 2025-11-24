@@ -31,12 +31,11 @@ jobs:
 
             - name: Build, Tag, and Push Docker image to Amazon ECR
               run: |
-                IMAGE_PATH="$ECR_REGISTRY:$IMAGE_TAG"
                 echo "Iniciando build e push para: $IMAGE_PATH"
-                docker build -t $IMAGE_PATH -f Dockerfile ./website
+                docker build -t ${ECR_REGISTRY}:${IMAGE_TAG} -f Dockerfile ./website
 
                 # Push the Docker image to ECR
-                docker push $IMAGE_PATH
+                docker push ${ECR_REGISTRY}:${IMAGE_TAG}
         outputs:
             image_tag: ${{ env.IMAGE_TAG }}
             ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
