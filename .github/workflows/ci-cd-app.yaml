@@ -14,7 +14,7 @@ jobs:
         name: Build ECR
         env:
             IMAGE_TAG: ${{github.sha}}
-            ECR_REGISTRY: ${{secrets.ECR_REGISTRY}}
+            ECR_URI: ${{secrets.ECR_URI}}
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
@@ -31,11 +31,12 @@ jobs:
 
             - name: Build, Tag, and Push Docker image to Amazon ECR
               run: |
+                IMAGE_PATH="${ECR_URI}:${IMAGE_TAG}"
                 echo "Iniciando build e push para: $IMAGE_PATH"
-                docker build -t ${ECR_REGISTRY}:${IMAGE_TAG} -f Dockerfile ./website
+                docker build -t $IMAGE_PATH -f Dockerfile ./website
 
                 # Push the Docker image to ECR
-                docker push ${ECR_REGISTRY}:${IMAGE_TAG}
+                docker push $IMAGE_PATH
         outputs:
             image_tag: ${{ env.IMAGE_TAG }}
             ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
