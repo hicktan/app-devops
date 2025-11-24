@@ -74,22 +74,46 @@ jobs:
             - name: Deploy via SSM
               run: |
                 INSTANCE_ID="${{ steps.find_ec2.outputs.instance_id }}"
-                DEPLOY_SCRIPT="
-                  echo 'Iniciando deploy da imagem $IMAGE_TAG...';
-                  
-                  sudo aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin $ECR_URI;
+                COMMAND_ID=$(aws ssm send-command \
+                  --instance-ids "$INSTANCE_ID" \
+                  --document-name "AWS-RunShellScript" \
+                  --parameters 'commands=[
+                    "echo \"=== Iniciando deploy da imagem ${{ env.IMAGE_TAG }} ===\"",
+                    "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ env.ECR_URI }}",
+                    "docker stop ${{ env.ECR_REPOSITORY }} 2>/dev/null || true",
+                    "docker rm ${{ env.ECR_REPOSITORY }} 2>/dev/null || true",
+                    "docker pull ${{ env.ECR_URI }}:${{ env.IMAGE_TAG }}",
+                    "docker run -d --name ${{ env.ECR_REPOSITORY }} -p 80:80 --restart unless-stopped ${{ env.ECR_URI }}:${{ env.IMAGE_TAG }}",
+                    "echo \"=== Container iniciado com sucesso ===\"",
+                    "docker ps | grep ${{ env.ECR_REPOSITORY }}"
+                  ]' \
+                  --output text \
+                  --query "Command.CommandId")
 
-                  sudo docker stop $ECR_REPOSITORY || true;
-                  sudo docker rm $ECR_REPOSITORY || true;
-                  sudo docker pull $ECR_URI:$IMAGE_TAG;
-
-                  sudo docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI:$IMAGE_TAG;
-
-                  sudo aws ssm send-command \
-                    --instance-ids "$INSTANCE_ID" \
-                    --document-name "AWS-RunShellScript" \
-                    --parameters commands="$DEPLOY_SCRIPT" 
-                  sleep 10
-                  sudo aws ssm wait command-executed --command-id $(aws ssm list-commands --instance-id "$INSTANCE_ID" --query "Commands[0].CommandId" --output text) --instance-id "$INSTANCE_ID""
+                echo "📤 Comando SSM enviado: $COMMAND_ID"
+                echo "⏳ Aguardando execução..."
+                
+                aws ssm wait command-executed \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "$INSTANCE_ID"
+                
+                echo "✅ Deploy concluído!"
+                
+                # Verifica status do comando
+                STATUS=$(aws ssm get-command-invocation \
+                  --command-id "$COMMAND_ID" \
+                  --instance-id "$INSTANCE_ID" \
+                  --query "Status" \
+                  --output text)
+                
+                if [ "$STATUS" != "Success" ]; then
+                  echo "::error::Deploy falhou com status: $STATUS"
+                  aws ssm get-command-invocation \
+                    --command-id "$COMMAND_ID" \
+                    --instance-id "$INSTANCE_ID" \
+                    --query "StandardErrorContent" \
+                    --output text
+                  exit 1
+                fi
 
                   
