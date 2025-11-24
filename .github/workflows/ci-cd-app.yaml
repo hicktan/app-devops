@@ -33,10 +33,10 @@ jobs:
             - name: Build, Tag, and Push Docker image to Amazon ECR
               run: |
                 # Build a Docker image and tag it
-                docker build -t $ECR_REGISTRY:$IMAGE_TAG -f Dockerfile ./website
+                docker build -t $ECR_REGISTRY/$ECR_REPOSIToRY:$IMAGE_TAG -f Dockerfile ./website
 
                 # Push the Docker image to ECR
-                docker push $ECR_REGISTRY:$IMAGE_TAG
+                docker push $ECR_REGISTRY/$ECR_REPOSIToRY:$IMAGE_TAG
         outputs:
             image_tag: ${{ env.IMAGE_TAG }}
             ECR_REGISTRY: ${{ env.ECR_REGISTRY }}
@@ -77,7 +77,7 @@ jobs:
                 DEPLOY_SCRIPT="
                   echo 'Iniciando deploy da imagem $IMAGE_TAG...';
                   
-                  sudo aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 023085635104.dkr.ecr.us-east-1.amazonaws.com;
+                  sudo aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_URI;
 
                   sudo docker stop $ECR_REPOSITRY || true;
                   sudo docker rm $ECR_REPOSITRY || true;
@@ -89,7 +89,7 @@ jobs:
                     --instance-ids "$INSTANCE_ID" \
                     --document-name "AWS-RunShellScript" \
                     --parameters commands="$DEPLOY_SCRIPT" 
-                    sleep 10
+                  sleep 10
                   sudo aws ssm wait command-executed --command-id $(aws ssm list-commands --instance-id "$INSTANCE_ID" --query "Commands[0].CommandId" --output text) --instance-id "$INSTANCE_ID""
 
                   
