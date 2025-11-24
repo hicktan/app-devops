@@ -13,7 +13,6 @@ jobs:
     job1:
         name: Build ECR
         env:
-            ECR_REPOSITORY: app-devops
             IMAGE_TAG: ${{github.sha}}
             ECR_REGISTRY: ${{secrets.ECR_REGISTRY}}
         runs-on: ubuntu-latest
@@ -79,11 +78,11 @@ jobs:
                   
                   sudo aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_URI;
 
-                  sudo docker stop $ECR_REPOSITRY || true;
-                  sudo docker rm $ECR_REPOSITRY || true;
+                  sudo docker stop $ECR_REPOSITORY || true;
+                  sudo docker rm $ECR_REPOSITORY || true;
                   sudo docker pull $ECR_URI:$IMAGE_TAG;
 
-                  sudo docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI/$ECR_REPOSITRY:$IMAGE_TAG;
+                  sudo docker run -d --name $ECR_REPOSITRY -p 80:80 $ECR_URI:$IMAGE_TAG;
 
                   sudo aws ssm send-command \
                     --instance-ids "$INSTANCE_ID" \
